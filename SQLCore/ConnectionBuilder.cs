@@ -17,7 +17,7 @@ namespace SQLCore
             _SQLServerName = serverName;
             _database = ConfigManager.DataBase;
             _security = ConfigManager.IntegratedSecurity;
-            ConnectionString = ChangeDataBase(serverName);
+            ConnectionString = ChangeDataBase(_database);
         }
 
         private String BuildConnectionString(string serverName)
@@ -27,7 +27,7 @@ namespace SQLCore
                 $"Initial Catalog={ConfigManager.DataBase};" +
                 $"Integrated Security={ConfigManager.IntegratedSecurity};";
         }
-        private String ChangeDataBase(String serverName)
+        public String ChangeDataBase(String database)
         {
             //switch (serverName)
             //{
@@ -42,8 +42,8 @@ namespace SQLCore
             //        }
             //}
 
-            return $"Data Source={serverName};" +
-                $"Initial Catalog={_database};" +
+            return $"Data Source={_SQLServerName};" +
+                $"Initial Catalog={database};" +
                 $"Integrated Security={_security};";
         }
 

@@ -1,6 +1,7 @@
 using NUnit.Framework; 
 using SQLCore;
 using System;
+using System.Collections.Generic;
 using System.IO;
 
 namespace tests 
@@ -17,9 +18,25 @@ namespace tests
         }
 
         [Test]
+        public void GetNewRowById()
+        {
+            string insertQuery =
+                "INSERT INTO[tafDB].[dbo].[tblFamily]" +
+                "([name],[Surname],[Title],[Location]) VALUES" +
+                "('Egor','Scherbich','brother','Kahovskaya')";
+
+            var idNew = ExecuteQuery.InsertGetId(insertQuery);
+
+            string selectQuery = "SELECT * FROM [tafDB].[dbo].[tblFamily]";
+
+            var result = ExecuteQuery.SelectById(selectQuery, $" WHERE personId={idNew}");
+            CollectionAssert.AreEqual(new List<string>() { idNew.ToString(),"Egor", "Scherbich", "brother", "Kahovskaya" }, result[1]);
+        }
+
+        [Test]
         public void Select_result_as_table()
         {
-            string selectQuery = "SELECT * FROM [tafDB].[dbo].[tblFamily]";
+            string selectQuery = "SELECT * FROM [accountant].[dbo].[DAY_COUNT]";
             var result = ExecuteQuery.ResultStringAsTable(selectQuery);
             Assert.Pass(result);
         }

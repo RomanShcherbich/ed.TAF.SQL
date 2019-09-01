@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Configuration;
+using System.Data;
 using System.Data.SqlClient;
 using System.Linq;
 
@@ -8,73 +9,41 @@ namespace SQLCore
 { 
     public class SqlQuery 
     {
-        private ConnectionBuilder connectionBuilder;
+        private ConnectionBuilder _connectionBuilder;
         private SqlConnection _connection;
+        private SqlDataReader _sqlDataReader;
 
         public SqlQuery()
         {
-            connectionBuilder = new ConnectionBuilder(ConfigManager.LocalServer);
+            _connectionBuilder = new ConnectionBuilder(ConfigManager.LocalServer);
             _connection = new SqlConnection();
-            _connection.ConnectionString = connectionBuilder.GetConnectionString();
+            _connection.ConnectionString = _connectionBuilder.GetConnectionString();
+            _connection.Open();
+        }
+        public void ChangeDatabase(string database)
+        {
+            _connectionBuilder.ChangeDataBase(database);
+            _connection.ConnectionString = _connectionBuilder.GetConnectionString();
         }
 
-        public String ResultStringAsTable(string query)
+        public String ResultStringAsTable(String query)
         {
-            using (_connection)
+            List<List<string>> table = Execute(query);
+            string queryResult = String.Empty;
+
+            for (int i = 0; i < table.Count; i++)
             {
-                _connection.Open();
-                SqlCommand command = new SqlCommand(query, _connection);
-
-                SqlDataReader reader = command.ExecuteReader();
-
-                if (reader.HasRows)
-                {
-                    Console.WriteLine("Columns count = {0}", reader.VisibleFieldCount);
-                    Console.WriteLine("Rows count = {0}", reader.FieldCount);
-
-                    List<String> Table = new List<string>();
-                    List<String> columns = new List<string>();
-
-                    for (int i = 0; i < reader.FieldCount; i++)
-                    {
-                        columns.Add(reader.GetName(i));
-                    }
-
-                    List<object> rowValues = new List<object>();
-
-                    while (reader.Read())
-                    {
-
-                        for (int i = 0; i < reader.VisibleFieldCount; i++)
-                        {
-                            var x = reader.GetValue(i);
-                            if (i == 0)
-                            {
-                                x = "\n" + x;
-                            }
-                            rowValues.Add(x);
-                        }
-                    }
-                    return String.Join("\t", columns) + "\n" + String.Join("\t", rowValues);
-                } else
-                {
-                    Console.WriteLine("Resul is empty");
-                }
+                queryResult += String.Join("\t", table[i]) + "\n";
             }
-            return "Resul is empty";
+            return queryResult.TrimEnd(char.Parse("\n"));
         }
 
 
         public List<List<string>> Execute(String query) 
         {
-            SqlConnection local = new SqlConnection();
-            connectionBuilder = new ConnectionBuilder(ConfigManager.LocalServer);
-            local.ConnectionString = connectionBuilder.GetConnectionString();
-
-            using (local)
+            using (_connection)
             {
-                local.Open();
-                SqlCommand selectQuery = new SqlCommand(query, local);
+                SqlCommand selectQuery = new SqlCommand(query, _connection);
 
                 using (SqlDataReader reader = selectQuery.ExecuteReader())
                 {
@@ -106,6 +75,28 @@ namespace SQLCore
                     return Table;
                 }
             }
+        }
+        public int InsertGetId(String query)
+        {
+            string sqlExpression = query + ";SET @id=SCOPE_IDENTITY()";
+            SqlCommand selectQuery = new SqlCommand(sqlExpression, _connection);
+
+            SqlParameter idParam = new SqlParameter
+            {
+                ParameterName = "@id",
+                SqlDbType = SqlDbType.Int,
+                Direction = ParameterDirection.Output
+            };
+            selectQuery.Parameters.Add(idParam);
+            selectQuery.ExecuteNonQuery();
+            Console.WriteLine($"New id = {idParam}");
+            return (int)idParam.Value;
+        }
+        public List<List<string>> SelectById(String query, String where)
+        {
+            string sqlExpression = query + where;
+
+            return Execute(sqlExpression);
         }
     } 
 } 
