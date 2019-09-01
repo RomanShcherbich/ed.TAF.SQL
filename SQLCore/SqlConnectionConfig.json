@@ -1,0 +1,5 @@
+﻿{
+  "Data Source": "(localdb)\MSSQLLocalDB",
+  "Initial Catalog": "tafDB",
+  "Integrated Security": "SSPI"
+}
