@@ -10,7 +10,7 @@ namespace SQLCore
     public class SqlQuery 
     {
         private ConnectionBuilder _connectionBuilder;
-        private SqlConnection _connection;
+        protected SqlConnection _connection;
         private SqlDataReader _sqlDataReader;
 
         public SqlQuery()
@@ -38,6 +38,60 @@ namespace SQLCore
             return queryResult.TrimEnd(char.Parse("\n"));
         }
 
+        public string ExecuteToDataSet(String query)
+        {
+            using (_connection)
+            {
+                SqlDataAdapter adapter = new SqlDataAdapter(query, _connection);
+
+                DataSet ds = new DataSet();
+
+                adapter.Fill(ds);
+
+                string resultAsString = string.Empty;
+                int i = 0;
+
+                foreach (DataTable dt in ds.Tables)
+                {
+                    string tableName = dt.TableName;
+                    resultAsString +=  tableName + ++i + "\n";
+
+                    foreach(DataColumn column in dt.Columns)
+                    {
+                        string columnName = column.ColumnName;
+                        resultAsString += "\t" + columnName;
+
+                    }
+                    resultAsString += "\n";
+
+                    foreach (DataRow row in dt.Rows)
+                    {
+                        var cells = row.ItemArray;
+                        foreach(object cell in cells)
+                        {
+                            string value = String.Format("{0}",cell);
+                            resultAsString += "\t" + value;
+                        }
+                        resultAsString += "\n";
+                    }
+
+                }
+
+                return resultAsString;
+            }
+        }
+
+        public DataTable getDataTable (String query)
+        {
+                SqlDataAdapter adapter = new SqlDataAdapter(query, _connection);
+
+                DataSet ds = new DataSet();
+
+                adapter.Fill(ds);
+                Console.WriteLine(ds.Tables[0].TableName + "OOOOOOOOOOOOOO");
+                return ds.Tables[0];
+
+        }
 
         public List<List<string>> Execute(String query) 
         {
